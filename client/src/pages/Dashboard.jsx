@@ -5,8 +5,6 @@ import { useNavigate } from 'react-router-dom'
 import { Coins, Edit,  Plus, Rocket,  Share2 , Copy, MoveLeft} from 'lucide-react'
 import axios from 'axios'
 import { SERVER_URL } from '../App'
-import { scale } from 'ol/size'
-
 const Dashboard = () => {
 	const { userData } = useSelector((state) => state.user)
 	const navigate = useNavigate()
