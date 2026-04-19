@@ -17,7 +17,7 @@ const PORT  = process.env.PORT || 8000;
 
 app.use(cookieParser())
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: 'https://web-builder-1.onrender.com',
   credentials: true
 }));
 
