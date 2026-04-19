@@ -9,7 +9,7 @@ import WebsiteEditor from './pages/Editor'
 import LiveSite from './pages/LiveSite'
 import Pricing from './pages/Pricing'
 
-export const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:8000'
+export const SERVER_URL = 'https://web-builder-xlqe.onrender.com'
 
 const App = () => {
   useGetCurrentUser()
