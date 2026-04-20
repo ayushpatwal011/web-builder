@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import axios from 'axios'
 import { SERVER_URL } from '../App'
+import { toast } from 'react-toastify'
 
 const Generated = () => {
 	const { userData } = useSelector(state => state.user)
@@ -18,13 +19,33 @@ const Generated = () => {
 	const [loading, setLoading] = useState(false)
 
 	const handleGenerateWebsite = async()=>{
+		const toastId = toast.loading("Analyzing your prompt...")
+		const steps = [
+			"Thinking about the architecture...",
+			"Building components...",
+			"Adding beautiful styles...",
+			"Wiring up the logic...",
+			"Finalizing the magic..."
+		]
+		let stepIndex = 0
+		const interval = setInterval(() => {
+			if (stepIndex < steps.length) {
+				toast.update(toastId, { render: steps[stepIndex] })
+				stepIndex++
+			}
+		}, 3000)
+
 		try {
 			setLoading(true)
 			const result = await axios.post(`${SERVER_URL}/api/website/generate`, {
 				prompt
 			}, {withCredentials: true})
+			clearInterval(interval)
+			toast.update(toastId, { render: "Website generated successfully!", type: "success", isLoading: false, autoClose: 3000 })
 			navigate(`/editor/${result.data.websiteId}`)			
 		} catch (e) {
+			clearInterval(interval)
+			toast.update(toastId, { render: "Failed to generate website", type: "error", isLoading: false, autoClose: 3000 })
 			console.log("error in handlegeneratewebite");
 			
 		}

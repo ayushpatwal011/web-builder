@@ -8,23 +8,27 @@ import { useSelector } from 'react-redux'
 import WebsiteEditor from './pages/Editor'
 import LiveSite from './pages/LiveSite'
 import Pricing from './pages/Pricing'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 export const SERVER_URL = 'https://web-builder-xlqe.onrender.com'
+// export const SERVER_URL = 'http://localhost:8000'
 
 const App = () => {
   useGetCurrentUser()
   const { userData } = useSelector(state => state.user)
   return (
     <BrowserRouter>
-    <Routes>
-      <Route path='/' element={<Home/>} />
-      <Route path='/dashboard' element={userData ? <Dashboard/> : <Home/>} />
-      <Route path='/generated' element={userData ? <Generated/> : <Home/>} />
-      <Route path='/editor/:id' element={userData ? <WebsiteEditor/> : <Home/>} />
-      <Route path='/site/:id' element={<LiveSite/>} />
-      <Route path='/pricing' element={<Pricing/>} />
-      <Route path='*' element={<Home/>} />
-    </Routes>
+      <ToastContainer theme="dark" />
+      <Routes>
+        <Route path='/' element={<Home />} />
+        <Route path='/dashboard' element={userData ? <Dashboard /> : <Home />} />
+        <Route path='/generated' element={userData ? <Generated /> : <Home />} />
+        <Route path='/editor/:id' element={userData ? <WebsiteEditor /> : <Home />} />
+        <Route path='/site/:id' element={<LiveSite />} />
+        <Route path='/pricing' element={<Pricing />} />
+        <Route path='*' element={<Home />} />
+      </Routes>
     </BrowserRouter>
   )
 }

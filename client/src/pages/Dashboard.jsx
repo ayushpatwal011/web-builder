@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom'
 import { Coins, Edit,  Plus, Rocket,  Share2 , Copy, MoveLeft} from 'lucide-react'
 import axios from 'axios'
 import { SERVER_URL } from '../App'
+import { toast } from 'react-toastify'
+
 const Dashboard = () => {
 	const { userData } = useSelector((state) => state.user)
 	const navigate = useNavigate()
@@ -35,17 +37,18 @@ const Dashboard = () => {
 	}, [])
 
 	const handleDeploy = async (id) => {
+		const toastId = toast.loading("Deploying your website...")
 		try {
 			const result = await axios.get(`${SERVER_URL}/api/website/deploy/${id}`, { withCredentials: true })
 			window.open(`${result.data.url}`, "_blank")
 			setWebsites(p => {
-				p.map((w)=>{
-					w._id === id ? {...w, deployed: true, deployUrl: result.data.url }:{
-						w
-					}
+				return p.map((w)=>{
+					return w._id === id ? {...w, deployed: true, deployUrl: result.data.url } : w
 				})
 			})
+			toast.update(toastId, { render: "Website deployed successfully!", type: "success", isLoading: false, autoClose: 3000 })
 		} catch (e) {
+			toast.update(toastId, { render: "Deployment failed", type: "error", isLoading: false, autoClose: 3000 })
 			console.log("error in handledeploy", e);
 		}
 	}
@@ -55,6 +58,7 @@ const Dashboard = () => {
 	const handleCopiedId = async(site) =>{
 		await navigator.clipboard.writeText(site.deployUrl)
 		setCopiedId(site._id)
+		toast.success("Link copied to clipboard!")
 		setTimeout(()=> setCopiedId(null), 2000)
 	}
 

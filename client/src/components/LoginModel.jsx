@@ -6,22 +6,24 @@ import axios from 'axios'
 import { SERVER_URL } from '../App'
 import { useDispatch } from 'react-redux'
 import { setUserData } from '../redux/userSlice'
+import { toast } from 'react-toastify'
 
 const LoginModel = ({ open, onClose }) => {
 	const dispatch = useDispatch()
 	const handleGoogleAuth = async ()=>{
 		try {
 			const result = await signInWithPopup(auth, provider)
-			console.log(result);
 			const { data }  =  await axios.post(`${SERVER_URL}/api/auth/google`, {
 				email: result.user.email,
 				name: result.user.displayName,
 				avatar: result.user.photoURL
 			}, { withCredentials: true })
 			dispatch(setUserData(data))
+			toast.success("Login successful!")
 			onClose()
 			
 		} catch (e) {
+			toast.error("Login failed. Please try again.")
 			console.log(e);
 		}
 	}

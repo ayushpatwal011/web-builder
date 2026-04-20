@@ -7,6 +7,8 @@ import axios from 'axios'
 import { SERVER_URL } from '../App'
 import { setUserData } from '../redux/userSlice'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
+
 const Home = () => {
 
 	const highlightes = [
@@ -23,9 +25,10 @@ const Home = () => {
 		try {
 			await axios.get(`${SERVER_URL}/api/auth/logout`, { withCredentials: true })
 			dispatch(setUserData(null))
+			toast.info("Logged out successfully")
 		} catch (e) {
+			toast.error("Logout failed")
 			console.log(e);
-
 		}
 	}
 
