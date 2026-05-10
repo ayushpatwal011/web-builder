@@ -2,9 +2,10 @@ import axios from 'axios';
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { SERVER_URL } from '../App';
-import { Code2, LoaderIcon, Monitor, Rocket, SendHorizonal, AlertCircle, X, MoveLeft } from 'lucide-react';
+import { Code2, LoaderIcon, Monitor, Trash2, SendHorizonal, AlertCircle, X, MoveLeft } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Editor from "@monaco-editor/react";
+
 
 const thinkingSteps = [
 	"Understanding your request...",
@@ -43,6 +44,7 @@ const WebsiteEditor = () => {
 	const [processIndex, setProcessIndex] = useState(0);
 	const [showCode, setShowCode] = useState(false);
 	const [showFullPreview, setShowFullPreview] = useState(false);
+	const navigate = useNavigate();
 
 	// Auto-scroll refs
 	const messagesEndRef = useRef(null);
@@ -146,6 +148,18 @@ const WebsiteEditor = () => {
 			handleUpdate();
 		}
 	};
+
+	const handleDelete = async () => {
+		try {
+			await axios.delete(`${SERVER_URL}/api/website/delete/${id}`, {
+				withCredentials: true
+			});
+			navigate('/dashboard');
+		} catch (e) {
+			console.error("Error deleting website:", e);
+			alert(e?.response?.data?.message || "Failed to delete website");
+		}
+	}
 
 	// --- Render states ---
 
@@ -266,6 +280,9 @@ const WebsiteEditor = () => {
 						</button>
 						<button className='btn-icon' onClick={() => setShowFullPreview(true)}>
 							<Monitor size={18} />
+						</button>
+						<button className='btn-icon' onClick={() => handleDelete()}>
+							<Trash2 size={18} />
 						</button>
 					</div>
 				</div>

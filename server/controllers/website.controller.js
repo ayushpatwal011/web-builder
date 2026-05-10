@@ -149,65 +149,69 @@ ABSOLUTE RULES
 - NO extra text
 - FORMAT MUST MATCH EXACTLY
 - IF FORMAT IS BROKEN → RESPONSE IS INVALID
+- Under 400 tokens
 `;
 
 export const generateWebsite = async (req, res) => {
-	try {
-		const { prompt } = req.body;
-		if (!prompt) return res.status(400).json({ message: "Prompt is required" })
-		console.log("prompt", prompt)
+  try {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ message: "Prompt is required" });
 
-		const user = await User.findById(req.user._id);
-		if (!user) return res.status(401).json({ message: "Unauthorized" })
-		console.log("user", user)
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-		if (user.credits < 50) return res.status(400).json({ message: "You do not have enough credits to generate a website." })
+    if (user.credits < 50)
+      return res.status(400).json({ message: "You do not have enough credits to generate a website." });
 
-		// get proper output from model
-		const finalPrompt = masterPrompt.replace("{USER_PROMPT}", prompt);
-		let raw = ''
-		let parsed = null
-		for (let i = 0; i < 2 && !parsed; i++) {
-			raw = await generateResponse(finalPrompt);
-			parsed = extractJSON(raw);
-			if (!parsed) {
-				raw = await generateResponse(finalPrompt + " \n\nRETURN ONLY RAW JSON.");
-				parsed = extractJSON(raw);
-			}
-		};
-		if (!parsed) {
-			console.log("ai return invalid response");
-			return res.status(400).json({ message: "Failed to generate website. Please try again." })
-		}
+    const finalPrompt = masterPrompt.replace("{USER_PROMPT}", prompt);
 
+    const attempts = [
+      finalPrompt,
+      finalPrompt + "\n\nCRITICAL: Return ONLY a raw JSON object. No markdown, no backticks, no explanation. Keep HTML simple and under 80 lines.",
+      finalPrompt + "\n\nReturn ONLY valid JSON. Use \\n for newlines inside strings. Never use single quotes or backticks inside JSON values.",
+    ];
 
-		const website = await Website.create({
-			user: user._id,
-			title: prompt.slice(0, 50),
-			latestCode: parsed.code,
-			conversation: [
-				{ role: "ai", content: parsed.message },
-				{ role: "user", content: prompt }
-			]
-		})
-		console.log("webiste is", website);
+    let parsed = null;
 
-		user.credits -= 50;
-		await user.save();
+    for (const attemptPrompt of attempts) {
+      try {
+        const raw = await generateResponse(attemptPrompt);
+        parsed = extractJSON(raw);
+        if (parsed?.code && parsed?.message) break;
+      } catch (err) {
+        console.error("generateResponse failed:", err.message);
+      }
+    }
 
-		return res.status(200).json({
-			message: "Website generated successfully",
-			websiteId: website._id,
-			remainingCredits: user.credits
-		})
+    if (!parsed) {
+      console.log("ai return invalid response");
+      return res.status(400).json({ message: "Failed to generate website. Please try again." })
+    }
 
-	} catch (e) {
-		console.error(e);
-		return res.status(500).json({ message: "Internal server error" })
-	}
-}
+    const website = await Website.create({
+      user: user._id,
+      title: prompt.slice(0, 50),
+      latestCode: parsed.code,
+      conversation: [
+        { role: "user", content: prompt },  
+        { role: "ai", content: parsed.message },
+      ],
+    });
 
+    user.credits -= 50;
+    await user.save();
 
+    return res.status(200).json({
+      message: "Website generated successfully",
+      websiteId: website._id,
+      remainingCredits: user.credits,
+    });
+
+  } catch (e) {
+    console.error("generateWebsite error:", e);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 export const getWebsitesById = async (req, res) => {
 	try {
 		const { id } = req.params;
@@ -222,64 +226,76 @@ export const getWebsitesById = async (req, res) => {
 }
 
 export const changes = async (req, res) => {
-	try {
-		console.log("running")
-		const { prompt } = req.body;
-		if (!prompt) return res.status(400).json({ message: "Prompt is required" })
-		console.log("running", prompt)
+  try {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ message: "Prompt is required" });
 
-		const user = await User.findById(req.user._id);
-		if (!user) return res.status(401).json({ message: "Unauthorized" })
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-		console.log("running", user)
-		const websiteId = req.params.id;
-		const website = await Website.findById({ _id: websiteId, user: user._id });
-		if (!website) return res.status(404).json({ message: "Website not found" })
-		console.log("running", website)
+    const websiteId = req.params.id;
+    const website = await Website.findOne({ _id: websiteId, user: user._id });
+    if (!website) return res.status(404).json({ message: "Website not found" });
 
+    if (user.credits < 25)
+      return res.status(400).json({ message: "You do not have enough credits to make changes." });
 
-		if (user.credits < 25) return res.status(400).json({ message: "You do not have enough credits to generate a website." })
+    const updatePrompt = `
+      UPDATE THIS HTML WEBSITE.
+      CURRENT CODE:
+      ${website.latestCode}
+      USER REQUEST:
+      ${prompt}
+      RETURN RAW JSON ONLY:
+      {
+        "message": "Short confirmation message",
+        "code": "<UPDATED FULL HTML CODE>"
+      }`;
 
-		console.log("running")
-		// update code
-		const updatePrompt = `
-			UPDATE THIS HTML WEBSITE.
-			CURRENT CODE:
-			${website.latestCode}
-			USER REQUEST:
-			${prompt}
-			RETURN RAW JSON ONLY:
-			{
-			"message":"Short confimation",
-			"code":"<UPDATED FULL HTML CODE>"
-			}`
-		let raw = ''
-		let parsed = null
-		for (let i = 0; i < 2 && !parsed; i++) {
-			raw = await generateResponse(updatePrompt);
-			parsed = extractJSON(raw);
-			if (!parsed) {
-				raw = await generateResponse(updatePrompt + " \n\nRETURN ONLY RAW JSON.");
-				parsed = extractJSON(raw);
-			}
-		};
-		if (!parsed) {
+    const attempts = [
+      updatePrompt,
+      updatePrompt + "\n\nCRITICAL: Return ONLY a raw JSON object. No markdown, no backticks, no explanation.",
+      updatePrompt + "\n\nReturn ONLY valid JSON. Use \\n for newlines inside strings. Never use single quotes or backticks inside JSON values.",
+    ];
+
+    let parsed = null;
+    for (const attemptPrompt of attempts) {
+      try {
+        const raw = await generateResponse(attemptPrompt);
+        console.log("Raw AI response (first 300 chars):", raw?.slice(0, 300));
+        parsed = extractJSON(raw);
+        if (parsed?.code && parsed?.message) break;
+      } catch (err) {
+        console.error("generateResponse failed:", err.message);
+      }
+    }
+
+    if (!parsed) {
 			console.log("ai return invalid response");
 			return res.status(400).json({ message: "Failed to generate website. Please try again." })
 		}
 
-		website.conversation.push({ role: "ai", content: parsed.message }, { role: "user", content: prompt });
-		website.latestCode = parsed.code;
-		await website.save();
-		user.credits -= 25;
-		await user.save();
+    website.latestCode = parsed.code;
+    website.conversation.push(
+      { role: "user", content: prompt },
+      { role: "ai", content: parsed.message }
+    );
+    await website.save();
 
-		return res.status(200).json({ message: parsed.message, code: parsed.code, remainingCredits: user.credits })
-	} catch (e) {
-		console.log("error in changes", e);
-		return res.status(500).json({ message: "Internal server error" })
-	}
-}
+    user.credits -= 25;
+    await user.save();
+
+    return res.status(200).json({
+      message: parsed.message,
+      code: parsed.code,     
+      remainingCredits: user.credits,
+    });
+
+  } catch (e) {
+    console.error("changes error:", e);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const getAllWebistes = async (req, res) => {
 	try {
@@ -310,7 +326,7 @@ export const deploy = async (req, res) => {
 				.replace(/[^a-z0-9]/g, '')
 				.slice(0, 60);
 
-			const uniquePart = website._id.toString().slice(-5);
+			const uniquePart = Date.now().toString()
 
 			website.slug = `${cleanTitle}-${uniquePart}`;
 		}
@@ -338,6 +354,21 @@ export const getBySlug = async (req, res) => {
 		return res.status(200).json({ website });
 	} catch (e) {
 		console.log("error in getBySlug", e);
+		return res.status(500).json({ message: "Internal server error" })
+	}
+}
+
+export const deleteWebsite = async (req, res)=>{
+	try{
+		const { id } = req.params;
+		const userid = req.user._id;
+		const website = await Website.findByIdAndDelete({ _id: id, user: userid });
+		if(!website){
+			res.status(400).json({message: "website not found"})
+		}
+		return res.status(200).json({ message: "website deleted successfully" });
+	}catch(e){
+		console.log("error in deleteWebsite", e);
 		return res.status(500).json({ message: "Internal server error" })
 	}
 }
