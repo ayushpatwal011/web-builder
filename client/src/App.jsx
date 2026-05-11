@@ -11,9 +11,9 @@ import Pricing from './pages/Pricing'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
-// export const SERVER_URL = 'https://web-builder-xlqe.onrender.com'
+export const SERVER_URL = 'https://web-builder-xlqe.onrender.com'
 // export const SERVER_URL = 'http://localhost:8000'
-export const SERVER_URL = import.meta.env.VITE_SERVER_URL
+// export const SERVER_URL = import.meta.env.VITE_SERVER_URL
 
 const App = () => {
   useGetCurrentUser()
