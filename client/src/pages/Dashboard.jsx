@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Coins, Edit,  Plus, Rocket,  Share2 , Copy, MoveLeft} from 'lucide-react'
 import axios from 'axios'
 import { SERVER_URL } from '../App'
@@ -15,6 +15,29 @@ const Dashboard = () => {
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState('')
 	const [copiedId, setCopiedId] = useState(null)
+	const [searchParams, setSearchParams] = useSearchParams()
+
+	useEffect(() => {
+		const sessionId = searchParams.get('session_id');
+		if (sessionId) {
+			const verifyPayment = async () => {
+				const toastId = toast.loading("Verifying your payment...");
+				try {
+					await axios.post(`${SERVER_URL}/api/billing/verify-session`, { sessionId }, { withCredentials: true });
+					toast.update(toastId, { render: "Payment verified! Credits updated.", type: "success", isLoading: false, autoClose: 3000 });
+					setSearchParams({});
+					// Give some time for toast then reload to get new credits
+					setTimeout(() => {
+						window.location.reload();
+					}, 1500);
+				} catch (e) {
+					toast.update(toastId, { render: "Payment verification failed.", type: "error", isLoading: false, autoClose: 3000 });
+					setSearchParams({});
+				}
+			}
+			verifyPayment();
+		}
+	}, [searchParams, setSearchParams])
 
 	useEffect(() => {
 		const handleGetAllWebsites = async () => {

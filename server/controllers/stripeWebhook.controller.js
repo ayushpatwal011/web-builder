@@ -1,3 +1,6 @@
+import stripe from "../config/stripe.js";
+import User from "../models/user.model.js";
+
 export const stripeWebhook = async (req, res) => {
 	console.log("🚀 Webhook HIT");
 

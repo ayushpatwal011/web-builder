@@ -11,8 +11,8 @@ import { stripeWebhook } from './controllers/stripeWebhook.controller.js';
 
 dotenv.config();
 const app = express();
-app.use(express.json())
 app.post('/api/stripe/webhook', express.raw({type:'application/json'}), stripeWebhook)
+app.use(express.json())
 const PORT  = process.env.PORT || 8000;
 
 app.use(cookieParser())
