@@ -1,9 +1,10 @@
 import express from "express";
 import { isAuth } from "../middlewares/isAuth.js";
-import { changes, deleteWebsite, deploy, generateWebsite, getAllWebistes, getBySlug, getWebsitesById } from "../controllers/website.controller.js";
+import { changes, deleteWebsite, deploy, generateWebsite, generateWebsiteByAgent, getAllWebistes, getBySlug, getWebsitesById } from "../controllers/website.controller.js";
 const websiteRouter =express.Router();
 
-websiteRouter.post('/generate', isAuth, generateWebsite);
+// websiteRouter.post('/generate', isAuth, generateWebsite);
+websiteRouter.post('/generate', isAuth, generateWebsiteByAgent);
 websiteRouter.post('/update/:id', isAuth, changes);
 websiteRouter.get('/get-by-id/:id', isAuth, getWebsitesById);
 websiteRouter.get('/all', isAuth, getAllWebistes);
